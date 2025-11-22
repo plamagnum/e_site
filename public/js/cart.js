@@ -311,68 +311,93 @@ class CartManager {
      * Показати форму оформлення замовлення
      */
     showCheckoutForm() {
-        const modal = document.createElement('div');
-        modal.className = 'modal show';
-        modal.id = 'checkout-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="document.getElementById('checkout-modal').remove()">&times;</span>
-                <h2>Оформлення замовлення</h2>
-                <form id="checkoutForm">
-                    <div class="form-group">
-                        <label for="shipping-address">Адреса доставки:</label>
-                        <textarea id="shipping-address" 
-                                  rows="3" 
-                                  required
-                                  placeholder="Вкажіть повну адресу доставки"></textarea>
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.id = 'checkout-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="document.getElementById('checkout-modal').remove()">&times;</span>
+            <h2>Оформлення замовлення</h2>
+            <form id="checkoutForm">
+                <div class="form-group">
+                    <label for="shipping-address">Адреса доставки: <span style="color: red;">*</span></label>
+                    <textarea id="shipping-address" 
+                              rows="3" 
+                              required
+                              placeholder="Місто, вулиця, будинок, квартира"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Телефон: <span style="color: red;">*</span></label>
+                    <input type="tel" 
+                           id="phone" 
+                           required
+                           placeholder="+380...">
+                </div>
+
+                <div class="form-group">
+                    <label for="comment">Коментар до замовлення:</label>
+                    <textarea id="comment" 
+                              rows="2" 
+                              placeholder="Додаткова інформація (необов'язково)"></textarea>
+                </div>
+
+                <div class="checkout-summary">
+                    <h3>Ваше замовлення:</h3>
+                    <div class="summary-items">
+                        ${this.items.map(item => `
+                            <div class="summary-item">
+                                <span>${item.name} × ${item.quantity}</span>
+                                <span>${(item.price * item.quantity).toFixed(2)} грн</span>
+                            </div>
+                        `).join('')}
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="phone">Телефон:</label>
-                        <input type="tel" 
-                               id="phone" 
-                               required
-                               placeholder="+380...">
+                    <div class="summary-total">
+                        <strong>Всього:</strong>
+                        <strong>${this.getTotalAmount().toFixed(2)} грн</strong>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="comment">Коментар до замовлення (необов'язково):</label>
-                        <textarea id="comment" 
-                                  rows="2" 
-                                  placeholder="Додаткова інформація"></textarea>
-                    </div>
+                <button type="submit" class="btn btn-success btn-block">
+                    Підтвердити замовлення
+                </button>
+            </form>
+        </div>
+    `;
 
-                    <div class="checkout-summary">
-                        <h3>Ваше замовлення:</h3>
-                        <div class="summary-items">
-                            ${this.items.map(item => `
-                                <div class="summary-item">
-                                    <span>${item.name} × ${item.quantity}</span>
-                                    <span>${(item.price * item.quantity).toFixed(2)} грн</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="summary-total">
-                            <strong>Всього:</strong>
-                            <strong>${this.getTotalAmount().toFixed(2)} грн</strong>
-                        </div>
-                    </div>
+    document.body.appendChild(modal);
 
-                    <button type="submit" class="btn btn-success btn-block">
-                        Підтвердити замовлення
-                    </button>
-                </form>
-            </div>
-        `;
+    // Закриття по кліку на backdrop
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            if (confirm('Ви впевнені, що хочете скасувати оформлення замовлення?')) {
+                modal.remove();
+            }
+        }
+    });
 
-        document.body.appendChild(modal);
+    // Закриття по ESC
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            if (confirm('Ви впевнені, що хочете скасувати оформлення замовлення?')) {
+                modal.remove();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
 
-        // Обробка форми
-        document.getElementById('checkoutForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.submitOrder();
-        });
-    }
+    // Обробка форми
+    document.getElementById('checkoutForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.submitOrder();
+    });
+
+    // Фокус на першому полі
+    setTimeout(() => {
+        document.getElementById('shipping-address').focus();
+    }, 100);
+}
 
     /**
      * Відправити замовлення

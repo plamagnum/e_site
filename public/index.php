@@ -2,7 +2,7 @@
 // public/index.php
 
 // Ініціалізація сесії
-//session_start();
+session_start();
 
 // Дозволяємо CORS для розробки
 header('Access-Control-Allow-Origin: *');
@@ -138,6 +138,25 @@ if (strpos($requestUri, '/api/') === 0) {
         }
         exit;
     }
+
+    // Order routes - ДОДАЙТЕ МАРШРУТ ДЛЯ /api/orders/user/{userId}
+    if (preg_match('#^/api/orders/user/(\d+)$#', $requestUri, $matches)) {
+        $userId = (int)$matches[1];
+        if ($requestMethod === 'GET') {
+            $orderController->userOrders($userId);
+            exit;
+        }
+    }
+
+    // Order routes - статусу
+    if (preg_match('#^/api/orders/status/([a-z]+)$#', $requestUri, $matches)) {
+        $status = $matches[1];
+        if ($requestMethod === 'GET') {
+            $orderController->byStatus($status);
+            exit;
+        }
+    }
+
 
     // Order routes
     if (preg_match('#^/api/orders(/(\d+))?$#', $requestUri, $matches)) {

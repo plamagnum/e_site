@@ -17,6 +17,7 @@ class AuthManager {
         this.checkAuthStatus();
         this.setupAuthForms();
         this.setupAuthLinks();
+        this.setupProfileSection();
     }
 
     /**
@@ -83,6 +84,29 @@ class AuthManager {
     }
 
     /**
+     * Налаштування профілю
+     */
+    setupProfileSection() {
+        // Форма редагування профілю
+        const profileForm = document.getElementById('profileForm');
+        if (profileForm) {
+            profileForm.addEventListener('submit', (e) => this.handleProfileUpdate(e));
+        }
+
+        // Кнопка зміни пароля
+        const changePasswordBtn = document.getElementById('change-password-btn');
+        if (changePasswordBtn) {
+            changePasswordBtn.addEventListener('click', () => this.showChangePasswordModal());
+        }
+
+        // Форма зміни пароля
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        if (changePasswordForm) {
+            changePasswordForm.addEventListener('submit', (e) => this.handlePasswordChange(e));
+        }
+    }
+
+    /**
      * Налаштування посилань авторизації
      */
     setupAuthLinks() {
@@ -93,7 +117,7 @@ class AuthManager {
                 e.preventDefault();
                 
                 if (this.isLoggedIn) {
-                    this.showUserMenu();
+                    this.showProfile();
                 } else {
                     this.showAuthSection();
                 }
@@ -204,6 +228,368 @@ class AuthManager {
             console.error('Register error:', error);
             window.app.showMessage('Помилка з\'єднання з сервером', 'error');
         }
+    }
+
+    /**
+     * Показати профіль користувача
+     */
+    async showProfile() {
+        if (!this.isLoggedIn || !this.currentUser) {
+            this.showAuthSection();
+            return;
+        }
+
+        // Ховаємо всі секції
+        document.querySelectorAll('section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // Показуємо секцію профілю
+        let profileSection = document.getElementById('profile-section');
+        
+        if (!profileSection) {
+            profileSection = this.createProfileSection();
+            document.querySelector('.main').appendChild(profileSection);
+        }
+
+        // Заповнюємо дані профілю
+        this.fillProfileData();
+        
+        // Завантажуємо замовлення користувача
+        await this.loadUserOrders();
+
+        profileSection.classList.remove('hidden');
+    }
+
+    /**
+     * Створити секцію профілю
+     */
+    createProfileSection() {
+        const section = document.createElement('section');
+        section.id = 'profile-section';
+        section.className = 'profile-section';
+        section.innerHTML = `
+            <div class="container">
+                <h2>Мій профіль</h2>
+                
+                <div class="profile-container">
+                    <!-- Sidebar -->
+                    <div class="profile-sidebar">
+                        <div class="profile-menu">
+                            <button class="profile-menu-item active" data-tab="info">
+                                <span class="icon">👤</span>
+                                Особиста інформація
+                            </button>
+                            <button class="profile-menu-item" data-tab="orders">
+                                <span class="icon">📦</span>
+                                Мої замовлення
+                            </button>
+                            <button class="profile-menu-item" data-tab="security">
+                                <span class="icon">🔒</span>
+                                Безпека
+                            </button>
+                            <button class="profile-menu-item logout-btn" id="profile-logout-btn">
+                                <span class="icon">🚪</span>
+                                Вийти
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="profile-content">
+                        <!-- Особиста інформація -->
+                        <div class="profile-tab active" id="tab-info">
+                            <div class="profile-card">
+                                <h3>Особиста інформація</h3>
+                                <form id="profileForm">
+                                    <div class="form-group">
+                                        <label for="profile-name">Ім'я:</label>
+                                        <input type="text" id="profile-name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="profile-email">Email:</label>
+                                        <input type="email" id="profile-email" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="profile-phone">Телефон:</label>
+                                        <input type="tel" id="profile-phone">
+                                    </div>
+                                    <div class="profile-info-item">
+                                        <label>Роль:</label>
+                                        <span id="profile-role" class="badge"></span>
+                                    </div>
+                                    <div class="profile-info-item">
+                                        <label>Дата реєстрації:</label>
+                                        <span id="profile-created"></span>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Замовлення -->
+                        <div class="profile-tab" id="tab-orders">
+                            <div class="profile-card">
+                                <h3>Мої замовлення</h3>
+                                <div id="user-orders-list" class="orders-list">
+                                    <p class="loading">Завантаження замовлень...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Безпека -->
+                        <div class="profile-tab" id="tab-security">
+                            <div class="profile-card">
+                                <h3>Зміна пароля</h3>
+                                <form id="changePasswordForm">
+                                    <div class="form-group">
+                                        <label for="current-password">Поточний пароль:</label>
+                                        <input type="password" id="current-password" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="new-password">Новий пароль:</label>
+                                        <input type="password" id="new-password" required minlength="6">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="confirm-password">Підтвердіть пароль:</label>
+                                        <input type="password" id="confirm-password" required minlength="6">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Змінити пароль</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Додаємо обробники подій для вкладок
+        const menuItems = section.querySelectorAll('.profile-menu-item:not(.logout-btn)');
+        menuItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                const tab = e.currentTarget.dataset.tab;
+                this.switchProfileTab(tab);
+            });
+        });
+
+        // Кнопка виходу
+        const logoutBtn = section.querySelector('#profile-logout-btn');
+        logoutBtn.addEventListener('click', () => this.logout());
+
+        return section;
+    }
+
+    /**
+     * Перемикання вкладок профілю
+     */
+    switchProfileTab(tabName) {
+        // Деактивуємо всі вкладки
+        document.querySelectorAll('.profile-menu-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelectorAll('.profile-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Активуємо вибрану вкладку
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+
+        // Завантажуємо замовлення при переході на вкладку
+        if (tabName === 'orders') {
+            this.loadUserOrders();
+        }
+    }
+
+    /**
+     * Заповнити дані профілю
+     */
+    fillProfileData() {
+        if (!this.currentUser) return;
+
+        document.getElementById('profile-name').value = this.currentUser.name || '';
+        document.getElementById('profile-email').value = this.currentUser.email || '';
+        document.getElementById('profile-phone').value = this.currentUser.phone || '';
+        
+        const roleElement = document.getElementById('profile-role');
+        roleElement.textContent = this.getRoleLabel(this.currentUser.role);
+        roleElement.className = `badge badge-${this.currentUser.role}`;
+        
+        const createdDate = new Date(this.currentUser.created_at);
+        document.getElementById('profile-created').textContent = createdDate.toLocaleDateString('uk-UA');
+    }
+
+    /**
+     * Отримати назву ролі
+     */
+    getRoleLabel(role) {
+        const roles = {
+            'admin': 'Адміністратор',
+            'manager': 'Менеджер',
+            'user': 'Користувач'
+        };
+        return roles[role] || role;
+    }
+
+    /**
+     * Обробка оновлення профілю
+     */
+    async handleProfileUpdate(event) {
+        event.preventDefault();
+
+        const name = document.getElementById('profile-name').value;
+        const email = document.getElementById('profile-email').value;
+        const phone = document.getElementById('profile-phone').value;
+
+        if (name.length < 2) {
+            window.app.showMessage('Ім\'я повинно містити мінімум 2 символи', 'error');
+            return;
+        }
+
+        if (!this.validateEmail(email)) {
+            window.app.showMessage('Невірний формат email', 'error');
+            return;
+        }
+
+        try {
+            const response = await window.app.fetch(`/users/${this.currentUser.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ name, email, phone })
+            });
+
+            if (response.success) {
+                this.currentUser = { ...this.currentUser, name, email, phone };
+                this.updateAuthUI();
+                window.app.showMessage('Профіль успішно оновлено', 'success');
+            } else {
+                window.app.showMessage(response.error || 'Помилка оновлення профілю', 'error');
+            }
+        } catch (error) {
+            console.error('Profile update error:', error);
+            window.app.showMessage('Помилка з\'єднання з сервером', 'error');
+        }
+    }
+
+    /**
+     * Обробка зміни пароля
+     */
+    async handlePasswordChange(event) {
+        event.preventDefault();
+
+        const currentPassword = document.getElementById('current-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+
+        if (newPassword !== confirmPassword) {
+            window.app.showMessage('Паролі не співпадають', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            window.app.showMessage('Новий пароль повинен містити мінімум 6 символів', 'error');
+            return;
+        }
+
+        try {
+            const response = await window.app.fetch('/auth/change-password', {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    current_password: currentPassword,
+                    new_password: newPassword 
+                })
+            });
+
+            if (response.success) {
+                window.app.showMessage('Пароль успішно змінено', 'success');
+                document.getElementById('changePasswordForm').reset();
+            } else {
+                window.app.showMessage(response.error || 'Помилка зміни пароля', 'error');
+            }
+        } catch (error) {
+            console.error('Password change error:', error);
+            window.app.showMessage('Помилка з\'єднання з сервером', 'error');
+        }
+    }
+
+    /**
+     * Завантажити замовлення користувача
+     */
+    async loadUserOrders() {
+        if (!this.currentUser) return;
+
+        const ordersList = document.getElementById('user-orders-list');
+        ordersList.innerHTML = '<p class="loading">Завантаження замовлень...</p>';
+
+        try {
+            const response = await window.app.fetch(`/orders/user/${this.currentUser.id}`);
+
+            if (response.success) {
+                if (response.data.length === 0) {
+                    ordersList.innerHTML = '<p class="no-data">У вас поки немає замовлень</p>';
+                } else {
+                    ordersList.innerHTML = response.data.map(order => this.createOrderCard(order)).join('');
+                }
+            } else {
+                ordersList.innerHTML = '<p class="error">Помилка завантаження замовлень</p>';
+            }
+        } catch (error) {
+            console.error('Load orders error:', error);
+            ordersList.innerHTML = '<p class="error">Помилка з\'єднання з сервером</p>';
+        }
+    }
+
+    /**
+     * Створити картку замовлення
+     */
+    createOrderCard(order) {
+        const statusLabels = {
+            'pending': 'Очікує',
+            'processing': 'Обробляється',
+            'completed': 'Виконано',
+            'cancelled': 'Скасовано'
+        };
+
+        const orderDate = new Date(order.created_at).toLocaleDateString('uk-UA');
+
+        return `
+            <div class="order-card">
+                <div class="order-header">
+                    <div class="order-number">Замовлення #${order.id}</div>
+                    <div class="order-status status-${order.status}">
+                        ${statusLabels[order.status] || order.status}
+                    </div>
+                </div>
+                <div class="order-body">
+                    <div class="order-info">
+                        <p><strong>Дата:</strong> ${orderDate}</p>
+                        <p><strong>Сума:</strong> ${order.total_amount} грн</p>
+                        <p><strong>Адреса доставки:</strong> ${order.shipping_address || 'Не вказана'}</p>
+                    </div>
+                    <div class="order-items">
+                        <strong>Товари:</strong>
+                        <ul>
+                            ${order.items.map(item => `
+                                <li>${item.product_name} x ${item.quantity} = ${item.price * item.quantity} грн</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+                <div class="order-footer">
+                    <button class="btn btn-sm" onclick="window.authManager.viewOrderDetails(${order.id})">
+                        Детальніше
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Переглянути деталі замовлення
+     */
+    async viewOrderDetails(orderId) {
+        // Тут можна додати модальне вікно з детальною інформацією про замовлення
+        console.log('View order details:', orderId);
+        window.app.showMessage('Функція в розробці', 'info');
     }
 
     /**
@@ -323,25 +709,6 @@ class AuthManager {
             registerForm.classList.add('hidden');
             loginForm.classList.remove('hidden');
         }
-    }
-
-    /**
-     * Показати меню користувача
-     */
-    showUserMenu() {
-        // Тут можна додати випадаюче меню з профілем, замовленнями тощо
-        const menu = `
-            <div class="user-menu">
-                <ul>
-                    <li><a href="#profile">Профіль</a></li>
-                    <li><a href="#orders">Мої замовлення</a></li>
-                    <li><a href="#" id="logout-menu-btn">Вихід</a></li>
-                </ul>
-            </div>
-        `;
-        
-        // Логіка відображення меню
-        console.log('Show user menu');
     }
 
     /**

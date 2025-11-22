@@ -16,7 +16,11 @@
                 <ul class="nav-menu">
                     <li><a href="#home">Головна</a></li>
                     <li><a href="#products">Товари</a></li>
-                    <li><a href="#cart">Кошик (<span id="cart-count">0</span>)</a></li>
+                    <!-- <li><a href="#cart">Кошик (<span id="cart-count">0</span>)</a></li> -->
+                    <li><a href="#cart" onclick="event.preventDefault(); window.cartManager.showCart();">
+                        Кошик (<span id="cart-count">0</span>)
+                    </a></li>
+
                     <li><a href="#login" id="auth-link">Вхід</a></li>
                 </ul>
             </div>
@@ -101,15 +105,22 @@
 
         <!-- Кошик -->
         <section id="cart-section" class="cart-section hidden">
-            <div class="container">
-                <h2>Кошик</h2>
-                <div id="cart-items"></div>
-                <div class="cart-total">
-                    <h3>Всього: <span id="cart-total">0</span> грн</h3>
-                    <button id="checkout-btn" class="btn btn-success">Оформити замовлення</button>
-                </div>
+    <div class="container">
+        <h2>Кошик</h2>
+        <div id="cart-items" class="cart-items-container">
+            <!-- Товари будуть тут -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-actions">
+                <button id="clear-cart-btn" class="btn btn-secondary">Очистити кошик</button>
             </div>
-        </section>
+            <div class="cart-total-section">
+                <h3>Всього: <span id="cart-total">0</span> грн</h3>
+                <button id="checkout-btn" class="btn btn-success">Оформити замовлення</button>
+            </div>
+        </div>
+    </div>
+</section>
     </main>
 
     <footer class="footer">

@@ -5,7 +5,6 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\UserRepository;
-use App\Helpers\Session;
 
 /**
  * Сервіс для аутентифікації та авторизації
@@ -35,12 +34,10 @@ class AuthService
         }
 
         // Створення сесії
-        Session::set('user_id', $user->getId());
-        Session::set('user_email', $user->getEmail());
-        Session::set('user_role', $user->getRole());
-        
-        // Регенеруємо ID сесії для безпеки
-        Session::regenerate();
+        //session_start();
+        $_SESSION['user_id'] = $user->getId();
+        $_SESSION['user_email'] = $user->getEmail();
+        $_SESSION['user_role'] = $user->getRole();
 
         return [
             'success' => true,
@@ -79,7 +76,8 @@ class AuthService
      */
     public function logout(): void
     {
-        Session::destroy();
+        session_start();
+        session_destroy();
     }
 
     /**
@@ -87,7 +85,8 @@ class AuthService
      */
     public function isAuthenticated(): bool
     {
-        return Session::has('user_id');
+        session_start();
+        return isset($_SESSION['user_id']);
     }
 
     /**
@@ -99,7 +98,6 @@ class AuthService
             return null;
         }
 
-        $userId = Session::get('user_id');
-        return $this->userRepository->findById($userId);
+        return $this->userRepository->findById($_SESSION['user_id']);
     }
 }

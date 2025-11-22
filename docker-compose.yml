@@ -1,10 +1,16 @@
+# docker-compose.yml
+
 version: '3.8'
 
 services:
+  # PHP-FPM сервіс
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        user: www
+        uid: 1000
     image: custom-php-app
     container_name: php_backend
     restart: unless-stopped
@@ -12,14 +18,22 @@ services:
     environment:
       SERVICE_NAME: app
       SERVICE_TAGS: dev
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: e_site_db
+      DB_USERNAME: e_site_user
+      DB_PASSWORD: secure_password
     working_dir: /var/www
-    # Синхронізація кореневої директорії забезпечує узгодженість шляхів
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./docker/php/opcache.ini:/usr/local/etc/php/conf.d/opcache.ini
     networks:
       - app-network
+    depends_on:
+      - db
 
+  # Nginx веб-сервер
   nginx:
     image: nginx:alpine
     container_name: nginx_server
@@ -27,15 +41,75 @@ services:
     tty: true
     ports:
       - "8080:80"
-    # Nginx також монтує код, щоб мати доступ до публічної статики
     volumes:
       - ./:/var/www
       - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+      - ./docker/nginx/logs:/var/log/nginx
     networks:
       - app-network
     depends_on:
       - app
 
+  # MySQL база даних
+  db:
+    image: mysql:8.0
+    container_name: mysql_database
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: e_site_db
+      MYSQL_USER: e_site_user
+      MYSQL_PASSWORD: secure_password
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ALLOW_EMPTY_PASSWORD: 0
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+
+  # phpMyAdmin для управління базою даних
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root_password
+      UPLOAD_LIMIT: 100M
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+  # Redis для кешування (опціонально)
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - app-network
+    command: redis-server --appendonly yes
+
+# Мережа
 networks:
   app-network:
     driver: bridge
+
+# Постійні томи
+volumes:
+  dbdata:
+    driver: local
+  redisdata:
+    driver: local

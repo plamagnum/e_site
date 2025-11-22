@@ -1,0 +1,35 @@
+# .dockerignore
+
+.git
+.gitignore
+.env
+.env.example
+README.md
+docker-compose.yml
+Makefile
+
+# Logs
+*.log
+logs/
+
+# Dependencies
+vendor/
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.phpunit.result.cache
+coverage/
+
+# Cache
+storage/cache/*
+storage/logs/*

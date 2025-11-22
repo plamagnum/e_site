@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Site</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <h1>E-Shop</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#home">Головна</a></li>
+                    <li><a href="#products">Товари</a></li>
+                    <li><a href="#cart">Кошик (<span id="cart-count">0</span>)</a></li>
+                    <li><a href="#login" id="auth-link">Вхід</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main">
+        <!-- Секція товарів -->
+        <section id="products" class="products-section">
+            <div class="container">
+                <h2>Наші товари</h2>
+                <div class="filters">
+                    <select id="category-filter">
+                        <option value="">Всі категорії</option>
+                        <option value="electronics">Електроніка</option>
+                        <option value="clothing">Одяг</option>
+                        <option value="books">Книги</option>
+                    </select>
+                </div>
+                <div id="products-grid" class="products-grid">
+                    <!-- Товари будуть завантажені через JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Модальне вікно товару -->
+        <div id="product-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <div id="product-details"></div>
+            </div>
+        </div>
+
+        <!-- Форма входу/реєстрації -->
+        <section id="auth-section" class="auth-section hidden">
+            <div class="container">
+                <div class="auth-forms">
+                    <!-- Форма входу -->
+                    <div id="login-form" class="auth-form">
+                        <h2>Вхід</h2>
+                        <form id="loginForm">
+                            <div class="form-group">
+                                <label for="login-email">Email:</label>
+                                <input type="email" id="login-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="login-password">Пароль:</label>
+                                <input type="password" id="login-password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Увійти</button>
+                            <p>Немає акаунту? <a href="#" id="show-register">Зареєструватись</a></p>
+                        </form>
+                    </div>
+
+                    <!-- Форма реєстрації -->
+                    <div id="register-form" class="auth-form hidden">
+                        <h2>Реєстрація</h2>
+                        <form id="registerForm">
+                            <div class="form-group">
+                                <label for="register-name">Ім'я:</label>
+                                <input type="text" id="register-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-email">Email:</label>
+                                <input type="email" id="register-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-password">Пароль:</label>
+                                <input type="password" id="register-password" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-phone">Телефон:</label>
+                                <input type="tel" id="register-phone">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Зареєструватись</button>
+                            <p>Вже є акаунт? <a href="#" id="show-login">Увійти</a></p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Кошик -->
+        <section id="cart-section" class="cart-section hidden">
+            <div class="container">
+                <h2>Кошик</h2>
+                <div id="cart-items"></div>
+                <div class="cart-total">
+                    <h3>Всього: <span id="cart-total">0</span> грн</h3>
+                    <button id="checkout-btn" class="btn btn-success">Оформити замовлення</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 E-Shop. Всі права захищені.</p>
+        </div>
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/products.js"></script>
+    <script src="/js/cart.js"></script>
+    <script src="/js/auth.js"></script>
+</body>
+</html>
